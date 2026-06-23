@@ -1,23 +1,46 @@
 import socket
 import selectors
+from typing import TypedDict
 
+
+# --- Types ---
+class ClientState(TypedDict):
+    addr: str
+    buf: bytearray
+
+
+# --- Consts ---
 HOST = "127.0.0.1"
 PORT = 6767
+MAX_CLIENTS = 2
+ACCEPT_CODE = b"ACCEPTED"
+REJECT_CODE = b"REJECTED"
 
-sel = selectors.DefaultSelector()
-clients = {}  # sock -> {"addr": str, "buf": bytearray}
+
+# --- Globals ---
+sel: selectors.BaseSelector = selectors.DefaultSelector()
+clients: dict[socket.socket, ClientState] = {}
 
 
-def accept(server_sock):
+# --- Funcs ---
+def accept(server_sock: socket.socket):
     conn, addr = server_sock.accept()
-    conn.setblocking(False)
     client = f"{addr[0]}:{addr[1]}"
+
+    if len(clients) == 2:
+        conn.sendall(REJECT_CODE)
+        print(f"Rejecting: {client}. Not accepting any further clients.")
+        conn.close()
+        return
+
+    conn.setblocking(False)
     print(f"{client} connected")
     clients[conn] = {"addr": client, "buf": bytearray()}
     sel.register(conn, selectors.EVENT_READ, read)
+    conn.sendall(ACCEPT_CODE)
 
 
-def read(conn):
+def read(conn: socket.socket):
     data = conn.recv(4096)
     if not data:
         drop(conn)
@@ -32,7 +55,7 @@ def read(conn):
         print(f"{state['addr']} sends: {line.decode(errors='replace')}")
 
 
-def drop(conn):
+def drop(conn: socket.socket):
     if conn not in clients:
         return
     print(f"{clients[conn]['addr']} disconnected")
