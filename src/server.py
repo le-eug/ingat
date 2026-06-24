@@ -1,3 +1,4 @@
+# --- Imports ---
 import socket
 import selectors
 from typing import TypedDict
@@ -29,18 +30,18 @@ def accept(server_sock: socket.socket):
 
     if len(clients) == 2:
         conn.sendall(REJECT_CODE)
-        print(f"Rejecting: {client}. Not accepting any further clients.")
+        print(f"Rejecting {client}. Not accepting any further clients.")
         conn.close()
         return
 
     conn.setblocking(False)
     print(f"{client} connected")
     clients[conn] = {"addr": client, "buf": bytearray()}
-    sel.register(conn, selectors.EVENT_READ, read)
+    sel.register(conn, selectors.EVENT_READ, pass_thru)
     conn.sendall(ACCEPT_CODE)
 
 
-def read(conn: socket.socket):
+def pass_thru(conn: socket.socket):
     data = conn.recv(4096)
     if not data:
         drop(conn)
@@ -53,6 +54,13 @@ def read(conn: socket.socket):
         line = bytes(state["buf"][:idx])
         del state["buf"][:idx + 1]
         print(f"{state['addr']} sends: {line.decode(errors='replace')}")
+        relay(conn, line)
+
+
+def relay(conn: socket.socket, msg: bytes):
+    for client in clients:
+        if client is not conn:
+            client.sendall(msg + b"\n")
 
 
 def drop(conn: socket.socket):
@@ -75,7 +83,7 @@ def main():
 
         while True:
             for key, _ in sel.select():
-                callback = key.data       # accept or read
+                callback = key.data       # accept or pass_thru
                 callback(key.fileobj)
 
 
