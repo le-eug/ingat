@@ -8,6 +8,7 @@ from typing import TypedDict
 class ClientState(TypedDict):
     addr: str
     buf: bytearray
+    username: str
 
 
 # --- Consts ---
@@ -34,11 +35,21 @@ def accept(server_sock: socket.socket):
         conn.close()
         return
 
-    conn.setblocking(False)
     print(f"{client} connected")
-    clients[conn] = {"addr": client, "buf": bytearray()}
-    sel.register(conn, selectors.EVENT_READ, pass_thru)
+    conn.setblocking(True)
     conn.sendall(ACCEPT_CODE)
+
+    # Read username
+    data = conn.recv(4096)
+    if not data:
+        # do something
+        pass
+    username = data.decode()
+
+    clients[conn] = {"addr": client, "buf": bytearray(), "username": username}
+
+    conn.setblocking(False)
+    sel.register(conn, selectors.EVENT_READ, pass_thru)
 
 
 def pass_thru(conn: socket.socket):
@@ -53,20 +64,20 @@ def pass_thru(conn: socket.socket):
         idx = state["buf"].index(b"\n")
         line = bytes(state["buf"][:idx])
         del state["buf"][:idx + 1]
-        print(f"{state['addr']} sends: {line.decode(errors='replace')}")
+        print(f"{clients[conn]['username']} ({clients[conn]['addr']}) sends: {line.decode(errors='replace')}")
         relay(conn, line)
 
 
 def relay(conn: socket.socket, msg: bytes):
     for client in clients:
         if client is not conn:
-            client.sendall(msg + b"\n")
+            client.sendall(f"{clients[conn]["username"]}: {msg.decode()}".encode())
 
 
 def drop(conn: socket.socket):
     if conn not in clients:
         return
-    print(f"{clients[conn]['addr']} disconnected")
+    print(f"{clients[conn]['username']} ({clients[conn]['addr']}) disconnected")
     sel.unregister(conn)
     conn.close()
     del clients[conn]

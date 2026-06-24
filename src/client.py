@@ -15,13 +15,12 @@ def recv_loop(s: socket.socket):
         if not data:
             print("\nServer closed the connection.")
             sys.exit()
-        print(f"{s.getsockname()[1]}: {data.decode().rstrip("\n")}")
+        print(f"{data.decode()}")
 
 
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        id = f"{s.getsockname()[0]}:{s.getsockname()[1]}"
 
         # Check if connection is rejected first
         data = s.recv(4096)
@@ -29,8 +28,12 @@ def main():
             print("Server has reached max amt of clients. Connection rejected. ")
             sys.exit()
 
+        # Prompt for username
+        username = input(f"Enter your name: ")
+        s.sendall(username.encode())
+
         # Begin message loop
-        print(f"Hello, {id}!")
+        print(f"Hello, {username}!")
         print(f"Message away!\n")
 
         t = threading.Thread(target=recv_loop, args=(s,), daemon=True)
