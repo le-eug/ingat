@@ -1,6 +1,8 @@
 import socket
 import sys
 import threading
+from prompt_toolkit import PromptSession 
+from prompt_toolkit.patch_stdout import patch_stdout 
 
 HOST = "127.0.0.1"
 PORT = 6767
@@ -13,7 +15,7 @@ def recv_loop(s: socket.socket):
         if not data:
             print("\nServer closed the connection.")
             sys.exit()
-        print(f"{s.getsockname()[1]}: {data.decode()}")
+        print(f"{s.getsockname()[1]}: {data.decode().rstrip("\n")}")
 
 
 def main():
@@ -35,9 +37,11 @@ def main():
         t.start()
 
         try:
-            while True:
-                message = input()
-                s.sendall(message.encode() + b"\n")
+            session = PromptSession[str]()
+            with patch_stdout():
+                while True:
+                    message = session.prompt("> ")
+                    s.sendall(message.encode() + b"\n")
         except (KeyboardInterrupt, EOFError):
             print("\nBye!")
 
