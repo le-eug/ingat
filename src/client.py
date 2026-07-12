@@ -1,8 +1,8 @@
 import socket
 import sys
 import threading
-from prompt_toolkit import PromptSession 
-from prompt_toolkit.patch_stdout import patch_stdout 
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 
 HOST = "127.0.0.1"
 PORT = 6767
@@ -20,6 +20,7 @@ def recv_loop(s: socket.socket):
 
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        print("Connecting to server...")
         s.connect((HOST, PORT))
 
         # Check if connection is rejected first
@@ -27,6 +28,7 @@ def main():
         if data == REJECT_CODE:
             print("Server has reached max amt of clients. Connection rejected. ")
             sys.exit()
+        print("Connected!")
 
         # Prompt for username
         username = input(f"Enter your name: ")
