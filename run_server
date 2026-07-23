@@ -1,4 +1,5 @@
 #!/bin/bash
 
 clear
-python3 src/server.py
+source ./.venv/bin/activate
+python3 -m src.server "$@"
