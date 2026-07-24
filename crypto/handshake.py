@@ -37,6 +37,9 @@ ED25519_SIG_LEN = 64
 MSG_TYPE_HELLO_UNAUTH = 0x01
 MSG_TYPE_HELLO_AUTH = 0x02
 
+HKDF_SALT = b"ingat-x25519-hkdf-salt-v1"
+HKDF_INFO = b"ingat handshake v1"
+
 _LEN_PREFIX = struct.Struct(">I")  # 4-byte big-endian unsigned length prefix
 
 

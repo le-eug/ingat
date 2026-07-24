@@ -13,12 +13,6 @@ HOST = "127.0.0.1"
 PORT = 6767
 REJECT_CODE = b"REJECTED"
 
-# Fixed, public constants for the HKDF step -- not secret. They just
-# bind derived keys to this protocol/version so they can't collide with
-# keys derived the same way for some unrelated purpose.
-HKDF_SALT = b"ingat-x25519-hkdf-salt-v1"
-HKDF_INFO = b"ingat handshake v1"
-
 # --plaintext talks the original unencrypted, newline-delimited protocol
 # (for an eavesdropping demo baseline) instead of the AES-256-GCM
 # protocol below. Must match the server's mode.
@@ -65,7 +59,7 @@ def complete_handshake(session: Session, their_eph_pub: bytes):
             return
         shared = x25519.shared_secret(session.eph_priv, their_eph_pub)
         session.session_key = hkdf.derive_key(
-            shared, salt=HKDF_SALT, info=HKDF_INFO, length=cipher.KEY_LEN
+            shared, salt=handshake.HKDF_SALT, info=handshake.HKDF_INFO, length=cipher.KEY_LEN
         )
         peer = session.peer_username
     print(f"\n[secure channel established with {peer}]")

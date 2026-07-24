@@ -14,8 +14,17 @@ class ClientState(TypedDict):
     frames: wire.FrameBuffer  # encrypted mode: raw bytes awaiting complete frames
 
 
+def _flag_int(name: str, default: int) -> int:
+    if name in sys.argv:
+        return int(sys.argv[sys.argv.index(name) + 1])
+    return default
+
+
 HOST = "127.0.0.1"
-PORT = 6767
+# --port lets the real server hide on a different port than the one
+# clients expect by default -- used for the MITM demo (src/mitm.py),
+# which squats on the default port instead.
+PORT = _flag_int("--port", 6767)
 MAX_CLIENTS = 2
 ACCEPT_CODE = b"ACCEPTED"
 REJECT_CODE = b"REJECTED"
